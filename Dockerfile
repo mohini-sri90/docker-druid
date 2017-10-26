@@ -1,8 +1,8 @@
 FROM ubuntu:14.04
 
 # Set version and github repo which you want to build from
-ENV GITHUB_OWNER druid-io
-ENV DRUID_VERSION 0.9.2
+ENV GITHUB_OWNER sashadt
+ENV DRUID_VERSION 0.10.1
 ENV ZOOKEEPER_VERSION 3.4.9
 
 # Java 8
@@ -13,8 +13,8 @@ RUN apt-get update \
       && apt-get update \
       && echo oracle-java-8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections \
       && apt-get install -y oracle-java8-installer oracle-java8-set-default \
-                            mysql-server \
                             supervisor \
+                            curl \
                             git \
       && apt-get clean \
       && rm -rf /var/cache/oracle-jdk8-installer \
@@ -30,49 +30,19 @@ RUN wget -q -O - http://www.us.apache.org/dist/zookeeper/zookeeper-$ZOOKEEPER_VE
       && cp /usr/local/zookeeper-$ZOOKEEPER_VERSION/conf/zoo_sample.cfg /usr/local/zookeeper-$ZOOKEEPER_VERSION/conf/zoo.cfg \
       && ln -s /usr/local/zookeeper-$ZOOKEEPER_VERSION /usr/local/zookeeper
 
-# Druid system user
-RUN adduser --system --group --no-create-home druid \
-      && mkdir -p /var/lib/druid \
-      && chown druid:druid /var/lib/druid
+# Druid user
+RUN adduser --system --group druid
 
-# Druid (from source)
-RUN mkdir -p /usr/local/druid/lib
+WORKDIR /home/druid
 
-# trigger rebuild only if branch changed
-ADD https://api.github.com/repos/$GITHUB_OWNER/druid/git/refs/heads/$DRUID_VERSION druid-version.json
-RUN git clone -q --branch $DRUID_VERSION --depth 1 https://github.com/$GITHUB_OWNER/druid.git /tmp/druid
-WORKDIR /tmp/druid
-
-# package and install Druid locally
-# use versions-maven-plugin 2.1 to work around https://jira.codehaus.org/browse/MVERSIONS-285
-RUN mvn -U -B org.codehaus.mojo:versions-maven-plugin:2.1:set -DgenerateBackupPoms=false -DnewVersion=$DRUID_VERSION \
-  && mvn -U -B install -DskipTests=true -Dmaven.javadoc.skip=true \
-  && cp services/target/druid-services-$DRUID_VERSION-selfcontained.jar /usr/local/druid/lib \
-  && cp -r distribution/target/extensions /usr/local/druid/ \
-  && cp -r distribution/target/hadoop-dependencies /usr/local/druid/ \
-  && apt-get purge --auto-remove -y git \
-  && apt-get clean \
-  && rm -rf /tmp/* \
-            /var/tmp/* \
-            /usr/local/apache-maven-3.2.5 \
-            /usr/local/apache-maven \
-            /root/.m2
-
-WORKDIR /
-
-# Setup metadata store and add sample data
-ADD sample-data.sql sample-data.sql
-RUN /etc/init.d/mysql start \
-      && mysql -u root -e "GRANT ALL ON druid.* TO 'druid'@'localhost' IDENTIFIED BY 'diurd'; CREATE database druid CHARACTER SET utf8;" \
-      && java -cp /usr/local/druid/lib/druid-services-*-selfcontained.jar \
-          -Ddruid.extensions.directory=/usr/local/druid/extensions \
-          -Ddruid.extensions.loadList=[\"mysql-metadata-storage\"] \
-          -Ddruid.metadata.storage.type=mysql \
-          io.druid.cli.Main tools metadata-init \
-              --connectURI="jdbc:mysql://localhost:3306/druid" \
-              --user=druid --password=diurd \
-      && mysql -u root druid < sample-data.sql \
-      && /etc/init.d/mysql stop
+# Druid user
+RUN curl -O http://static.druid.io/artifacts/releases/druid-0.10.1-bin.tar.gz \
+      && tar -xzf druid-0.10.1-bin.tar.gz \
+      && ln -s druid-0.10.1 current \
+      && ln -s current /var/lib/druid \
+      && chown druid:druid /var/lib/druid \
+      && cd current \
+      && bin/init
 
 # Setup supervisord
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf

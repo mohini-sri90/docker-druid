@@ -1,63 +1,43 @@
-# Druid Docker Image
+# Druid Docker Quickstart Image
+
+Docker quickstart image is based on documentation in http://druid.io/docs/latest/tutorials/quickstart.html
 
 ## Run a simple Druid cluster
-
-[Install Docker](docker-install.md)
 
 Download and launch the docker image
 
 ```sh
-docker pull druidio/example-cluster
-docker run --rm -i -p 3000:8082 -p 3001:8081 druidio/example-cluster
+docker pull sashadt/druid-quickstart
+docker run -d -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 8090:8090 --name druid sashadt/druid-quickstart
 ```
 
 Wait a minute or so for Druid to start up and download the sample.
 
-On OS X
+* List datasources - `curl http://localhost:8082/druid/v2/datasources`
+* Access the coordinator console - http://localhost:8081/
 
-- List datasources
-
-```
-curl http://$(docker-machine ip default):3000/druid/v2/datasources
-```
-
-- access the coordinator console
-
-```
-open http://$(docker-machine ip default):3001/
-```
-
-On Linux
-
-- List datasources
-
-```
-curl http://localhost:3000/druid/v2/datasources
-```
-
-- access the coordinator console at http://localhost:3001/
 
 ## Build Druid Docker Image
 
 To build the docker image yourself
 
 ```sh
-git clone https://github.com/druid-io/docker-druid.git
-docker build -t example-cluster docker-druid
+git clone https://github.com/sashadt/docker-druid.git
+docker build -t druid-quickstart docker-druid
 ```
 
 ## Logging
 
-You might want to look into the logs when debugging the Druid processes. This can be done by logging into the container using `docker ps`:
+You might want to look into the logs when debugging the Druid processes. This can be done by logging into the container using `docker container ls`:
 ```
 CONTAINER ID        IMAGE                     COMMAND                  CREATED             STATUS              PORTS                                                                                                                      NAMES
-9e73cbfc5612        druidio/example-cluster   "/bin/sh -c 'export H"   7 seconds ago       Up 6 seconds        2181/tcp, 2888/tcp, 3306/tcp, 3888/tcp, 8083/tcp, 0.0.0.0:3001->8081/tcp, 0.0.0.0:3000->8082/tcp    sick_lamport
+9b73cbfc5613        sashadt/druid-quickstart   "/bin/sh -c 'export H"   7 seconds ago       Up 6 seconds        2181/tcp, 2888/tcp, 3306/tcp, 3888/tcp, 8083/tcp, 0.0.0.0:3001->8081/tcp, 0.0.0.0:3000->8082/tcp    sick_lamport
 ```
 
 And attaching to the container using `docker exec -ti 9e73cbfc5612 bash` logs are written to `/tmp/`:
 
 ```
-root@d59a3d4a68c3:/tmp# ls -lah        
+root@9b73cbfc5613:/tmp# ls -alh        
 total 224K
 drwxrwxrwt  8 root   root   4.0K Jan 18 20:38 .
 drwxr-xr-x 61 root   root   4.0K Jan 18 20:38 ..
