@@ -8,7 +8,13 @@ Download and launch the docker image
 
 ```sh
 docker pull sashadt/druid-quickstart
-docker run -d -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 8090:8090 --name druid sashadt/druid-quickstart
+
+# Run druid quickstart container
+docker run -d -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 8090:8090 --name druid-quickstart sashadt/druid-quickstart
+
+# Connect to the running container
+docker exec -i -t druid-quickstart /bin/bash
+
 ```
 
 Wait a minute or so for Druid to start up and download the sample.

@@ -38,11 +38,10 @@ WORKDIR /home/druid
 # Druid user
 RUN curl -O http://static.druid.io/artifacts/releases/druid-0.10.1-bin.tar.gz \
       && tar -xzf druid-0.10.1-bin.tar.gz \
-      && ln -s druid-0.10.1 current \
-      && ln -s current /var/lib/druid \
-      && chown druid:druid /var/lib/druid \
-      && cd current \
-      && bin/init
+      && ln -s /home/druid/druid-0.10.1 /home/druid/current \
+      && cd /home/druid/current \
+      && bin/init \
+      && chown -R druid:druid /home/druid
 
 # Setup supervisord
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -61,5 +60,5 @@ EXPOSE 8090
 EXPOSE 3306
 EXPOSE 2181 2888 3888
 
-WORKDIR /var/lib/druid
+WORKDIR /home/druid/current
 ENTRYPOINT export HOSTIP="$(resolveip -s $HOSTNAME)" && exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
