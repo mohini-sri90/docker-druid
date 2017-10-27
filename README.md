@@ -28,8 +28,13 @@ Wait a minute or so for Druid to start up and download the sample.
 To build the docker image yourself
 
 ```sh
+# build the image
 git clone https://github.com/sashadt/docker-druid.git
 docker build -t druid-quickstart docker-druid
+
+# run the container
+docker run -d -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 8090:8090 --name druid-quickstart druid-quickstart
+docker exec -i -t druid-quickstart /bin/bash
 ```
 
 ## Logging
